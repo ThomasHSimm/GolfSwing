@@ -1,3 +1,4 @@
+"""Classes to handle videos and torch functionality."""
 import torch
 from torch.utils.data import Dataset
 import torch.nn as nn

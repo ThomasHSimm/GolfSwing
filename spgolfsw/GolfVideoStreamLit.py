@@ -1,3 +1,4 @@
+"""Streamlit app to analyse golf swings."""
 import scipy.io
 import torch
 from torch.utils.data import DataLoader

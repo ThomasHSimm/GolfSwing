@@ -1,3 +1,4 @@
+"""Utility functions."""
 import torch.nn as nn
 import cv2
 import tempfile
@@ -19,7 +20,6 @@ def conv_1x1_bn(inp, oup):
     )
 
 
-# @st.cache(allow_output_mutation=True,suppress_st_warning=True)
 def createImages(fila, nomS, events):
     """
     Given a video file location (fila) it will save as images to a folder
