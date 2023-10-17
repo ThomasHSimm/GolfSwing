@@ -16,6 +16,9 @@ Acivate the environment
 
 `conda activate golf-env`
 
+Get dependencies
+
+`pip install -e .`
 
 ## Run
 
