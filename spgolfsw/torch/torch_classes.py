@@ -1,72 +1,12 @@
-"""Classes to handle videos and torch functionality."""
+"""Classes to handle torch functionality."""
 import torch
-from torch.utils.data import Dataset
+
 import torch.nn as nn
 from torch.autograd import Variable
-import cv2
-import numpy as np
-import tempfile
 import math
 
-from utils import conv_1x1_bn, conv_bn
-
-
-class SampleVideo(Dataset):
-    def __init__(self, uploaded_files, input_size=160, transform=None):
-        #         self.path = self.name
-        self.input_size = input_size
-        self.transform = transform
-        self.uploaded_files = uploaded_files
-
-    def __len__(self):
-        return 1
-
-    def __getitem__(self, idx):
-        # create a fake file ffs
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(self.uploaded_files.read())
-        cap = cv2.VideoCapture(tfile.name)
-
-        #         cap = cv2.VideoCapture(self)
-        frame_size = [
-            cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
-            cap.get(cv2.CAP_PROP_FRAME_WIDTH),
-        ]
-        try:
-            ratio = self.input_size / max(frame_size)
-        except:
-            ratio = 1
-        new_size = tuple([int(x * ratio) for x in frame_size])
-        delta_w = self.input_size - new_size[1]
-        delta_h = self.input_size - new_size[0]
-        top, bottom = delta_h // 2, delta_h - (delta_h // 2)
-        left, right = delta_w // 2, delta_w - (delta_w // 2)
-
-        # preprocess and return frames
-        images = []
-        for pos in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
-            _, img = cap.read()
-            resized = cv2.resize(img, (new_size[1], new_size[0]))
-            b_img = cv2.copyMakeBorder(
-                resized,
-                top,
-                bottom,
-                left,
-                right,
-                cv2.BORDER_CONSTANT,
-                value=[0.406 * 255, 0.456 * 255, 0.485 * 255],
-            )  # ImageNet means (BGR)
-
-            b_img_rgb = cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)
-            images.append(b_img_rgb)
-        cap.release()
-
-        labels = np.zeros(len(images))  # only for compat with transforms
-        sample = {"images": np.asarray(images), "labels": np.asarray(labels)}
-
-        if self.transform:
-            sample = self.transform(sample)
-        return sample
+from spgolfsw.torch.torch_utils import conv_1x1_bn, conv_bn
+from spgolfsw.general.utils import get_package_path
 
 
 class ToTensor(object):
@@ -88,9 +28,7 @@ class Normalize(object):
 
     def __call__(self, sample):
         images, labels = sample["images"], sample["labels"]
-        images.sub_(self.mean[None, :, None, None]).div_(
-            self.std[None, :, None, None]
-        )  # noqa: 501
+        images.sub_(self.mean[None, :, None, None]).div_(self.std[None, :, None, None])
         return {"images": images, "labels": labels}
 
 
@@ -232,8 +170,10 @@ class EventDetector(nn.Module):
         self.dropout = dropout
 
         net = MobileNetV2(width_mult=width_mult)
+        PACKAGE_PATH = get_package_path()
         state_dict_mobilenet = torch.load(
-            "spgolfsw/mobilenet_v2.pth.tar", map_location=torch.device("cpu")
+            PACKAGE_PATH.joinpath("mobilenet_v2.pth.tar"),
+            map_location=torch.device("cpu"),
         )
         if pretrain:
             net.load_state_dict(state_dict_mobilenet)
